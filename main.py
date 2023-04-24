@@ -6,4 +6,4 @@ app.version = "0.0.1"
 
 @app.get('/', tags= ["home"])
 def message():
-    return {"hello": "world"}
+    return {"hello": "world2"}

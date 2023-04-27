@@ -1,19 +1,34 @@
-from fastapi.responses import HTMLResponse
-from fastapi import FastAPI,Body
-from pydantic import BaseModel
-from typing import Optional
+from fastapi.responses import HTMLResponse,JSONResponse
+from fastapi import FastAPI,Body,Path,Query
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from jwt_manager import create_token
 
 app = FastAPI()
 app.title = "Mi app con FastAPI"
 app.version = "0.0.1"
 
+class User(BaseModel):
+    email: str
+    password: str 
+
 class Movie(BaseModel):
     id: Optional [int]= None
-    title: str
-    overview: str
-    year: int
-    rating: float
-    category: str
+    title: str = Field(min_length=5,max_length=15)
+    overview: str = Field(min_length=15,max_length=50)
+    year: int = Field(le=2022)
+    rating: float = Field(ge=1,le=10)
+    category: str = Field(min_length=5,max_length=15)
+    class config():
+        schema_extra ={
+            "example":{
+            "id": 1,
+            "title":"Mi pelicula",
+            "overview": "Descripción de la",
+            "rating":9.8,
+            "category": "Acción"
+            }
+        } 
 
 movies= [
     {
@@ -37,28 +52,29 @@ movies= [
 def message():
     return HTMLResponse('<h1 hola mundo </h1>')
 
-@app.get('/movies', tags=['movies'])
-def get_movies():
-    return movies
+@app.get('/movies', tags=['movies'],response_model=List[Movie],status_code=200)
+def get_movies() -> List[movies]:
+    return JSONResponse(status_code=200,content=movies)
 
-@app.get('/movies/{id}',tags=['movies'])
-def get_movie(id: int):
+@app.get('/movies/{id}',tags=['movies'],response_model=Movie,status_code=404)
+def get_movie(id: int= Path(ge=1,le=2000))->Movie:
     for item in movies:
         if item["id"] == id:
-            return item
-    return []
+            return JSONResponse(content=item) 
+    return JSONResponse(status_code=404,content=[]) 
 
-@app.get('/movies/', tags=['movies'])
-def get_movies_by_category(category:str):
-    return [item for item in movies if item["category"] == category]
+@app.get('/movies/', tags=['movies'],response_model=List[Movie])
+def get_movies_by_category(category:str =Query(min_length=5,max_length=15)) ->List[movies]:
+    data= [item for item in movies if item["category"] == category]
+    return JSONResponse(content=data) 
     
-@app.post('/movies', tags=['movies'])
-def create_movie(movie:Movie):
+@app.post('/movies', tags=['movies'],response_model= dict,status_code=201)
+def create_movie(movie:Movie) ->dict:
     movies.append(movie)
-    return movies
+    return JSONResponse(status_code=201,content={"message": "Se ha registrado la pelicula"})
 
-@app.put('/movies/{id}', tags=['movies'])
-def update_movie(id: int, movie:Movie ):
+@app.put('/movies/{id}', tags=['movies'],response_model= dict,status_code=200)
+def update_movie(id: int, movie:Movie ) ->dict:
     for item in movies:
         if item["id"] == id:
             item['title'] = movie.title
@@ -66,11 +82,12 @@ def update_movie(id: int, movie:Movie ):
             item['year'] = movie.year
             item['rating:'] = movie.rating
             item['category'] = movie.category
-            return movies
+            return JSONResponse(status_code=200,content={"message": "Se ha modificado la pelicula"})
         
-@app.delete('/movies/{id}', tags=['movies'])
-def delete_movie(id: int):
+@app.delete('/movies/{id}', tags=['movies'],response_model= dict,status_code=200)
+def delete_movie(id: int) ->dict:
     for item in movies:
         if item['id'] == id:
             movies.remove(item)
-            return movies
+            return JSONResponse(status_code=200,content={"message": "Se ha elimanido la pelicula"})
+        

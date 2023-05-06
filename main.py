@@ -133,5 +133,7 @@ def delete_movie(id: int) ->dict:
     result = db.query(MovieModel).filter(MovieModel.id == id).first()
     if not result:
         return JSONResponse(status_code=404, content={'message':'No encontrado'})
+    db.delete(result)
+    db.commit()
     return JSONResponse(status_code=200,content={"message": "Se ha elimanido la pelicula"})
         

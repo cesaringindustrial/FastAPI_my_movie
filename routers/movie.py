@@ -44,7 +44,7 @@ movies= [
 		"title": "Avatar",
 		"overview": "En un exuberante planeta llamado Pandora viven los Na'vi, seres que ...",
 		"year": "2009",
-		"rating": 7.8,
+		"rating": 9.8,
 		"category": "Acción"
     }
 ]
@@ -71,7 +71,7 @@ def get_movie(id: int= Path(ge=1,le=2000))->Movie:
 @movie_router.get('/movies/', tags=['movies'],response_model=List[Movie])
 def get_movies_by_category(category:str =Query(min_length=5,max_length=15)) ->List[movies]:
     db= Session()
-    result= db.query(MovieModel).filter(MovieModel.category == category).all()
+    result= MovieService(db).get_movies_by_category(category)
     return JSONResponse(status_code=200,content=jsonable_encoder(result)) 
 
 ### create movie   

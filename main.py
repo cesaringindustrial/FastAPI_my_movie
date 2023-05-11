@@ -3,24 +3,21 @@ from fastapi import FastAPI,Body,Path,Query,Request,HTTPException,Depends
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from jwt_manager import create_token,validate_token
-from fastapi.security import HTTPBearer 
 from config.database import Session,engine, Base
 from models.movie import Movie as MovieModel
 from fastapi.encoders import jsonable_encoder
+from middlewares.error_handler import ErrorHandler
+from middlewares.jwt_bearer import JWTBearer
 
 app = FastAPI()
 app.title = "Mi app con FastAPI"
 app.version = "0.0.1"
+### add middleware to manage Error
+app.add_middleware(ErrorHandler)
 
 Base.metadata.create_all(bind=engine)
 
-### class for autentication by JWTBearer
-class JWTBearer(HTTPBearer):
-    async def __call__(self, request: Request):
-        auth= await super().__call__(request)
-        data= validate_token(auth.credentials)
-        if data ['email'] != "admin@gmail.com":
-            raise HTTPException(status_code=403, detail= "Las credenciales son invalidades")
+
 
 ### login and password
 class User(BaseModel):
@@ -136,4 +133,4 @@ def delete_movie(id: int) ->dict:
     db.delete(result)
     db.commit()
     return JSONResponse(status_code=200,content={"message": "Se ha elimanido la pelicula"})
-        
+     
